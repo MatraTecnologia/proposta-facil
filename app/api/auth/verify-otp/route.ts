@@ -1,11 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-// Configuração do Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-const supabaseAuth = createClient(supabaseUrl!, supabaseAnonKey!)
+// Client para operações de auth (lazy init)
+function getSupabaseAuth() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 // Interface para o corpo da requisição
 interface VerifyOTPRequest {
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar OTP
     console.log("🔍 Verificando OTP...")
-    const { data, error } = await supabaseAuth.auth.verifyOtp({
+    const { data, error } = await getSupabaseAuth().auth.verifyOtp({
       email,
       token,
       type: "email",

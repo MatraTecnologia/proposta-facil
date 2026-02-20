@@ -1,15 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
-// Configuração do Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// Client para operações de auth (usar anon key)
-const supabaseAuth = createClient(supabaseUrl!, supabaseAnonKey!);
-// Client para operações admin (usar service role)
-const supabaseAdmin = createClient(supabaseUrl!, supabaseServiceKey!);
+// Client para operações de auth (lazy init)
+function getSupabaseAuth() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 // Interface para o corpo da requisição
 interface SendOTPRequest {
@@ -126,7 +125,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Enviar OTP
-    const { data, error } = await supabaseAuth.auth.signInWithOtp({
+    const { data, error } = await getSupabaseAuth().auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: false,

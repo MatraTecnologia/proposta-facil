@@ -1,13 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-// Configuração do Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// Client para operações admin (usar service role)
-const supabaseAdmin = createClient(supabaseUrl!, supabaseServiceKey!);
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 // Interface para o corpo da requisição
 interface DirectLoginRequest {
