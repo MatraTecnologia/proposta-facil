@@ -1,10 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// Configuração do Supabase (usando service role para criar usuários)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Configuração do Supabase (lazy init para funcionar no Docker build)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // Configuração do NotifyX
 const NOTIFYX_WEBHOOK_URL = "https://notifyx.com.br/api/webhooks/rh0pdwfc";
@@ -277,6 +280,7 @@ async function createOrUpdateUser(
   documento: string,
   userData: any
 ) {
+  const supabase = getSupabase();
   try {
     // Detectar tipo de documento e priorizar CPF
     const docInfo = detectarTipoDocumento(documento);
@@ -418,6 +422,7 @@ async function createOrUpdateUser(
 
 // Função para processar reembolso e cancelar assinatura
 async function processarReembolso(webhookData: KiwifyWebhookData) {
+  const supabase = getSupabase();
   try {
     // Buscar assinatura pelo order_id
     const { data: assinatura, error: findError } = await supabase
@@ -464,6 +469,7 @@ async function processarReembolso(webhookData: KiwifyWebhookData) {
 }
 
 export async function POST(request: NextRequest) {
+  const supabase = getSupabase();
   try {
     // Extrair dados do corpo da requisição
     const webhookData: KiwifyWebhookData = await request.json();
