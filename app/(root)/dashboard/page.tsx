@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Users, Briefcase, FileText, Plus, TrendingUp, DollarSign, BarChart3, PieChart } from "lucide-react"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 import { ImageIcon } from "lucide-react"
 
@@ -108,7 +108,7 @@ const Dashboard = memo(function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const supabase = createClientComponentClient()
+
 
   const fetchStats = useCallback(async () => {
     if (!user) return

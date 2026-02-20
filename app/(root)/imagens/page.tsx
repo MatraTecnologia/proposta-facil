@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Search, Trash2, Download, Upload, ImageIcon, Copy, Eye } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabase"
 
 interface Imagem {
   id: string
@@ -35,7 +35,7 @@ export default function ImagensPage() {
   const [uploading, setUploading] = useState(false)
   const { toast } = useToast()
   const { user } = useAuth()
-  const supabase = createClientComponentClient()
+
 
   useEffect(() => {
     if (user) {

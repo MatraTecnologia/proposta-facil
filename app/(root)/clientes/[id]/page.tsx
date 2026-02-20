@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Mail, Phone, Building, Calendar, FileText, Eye, MoreVertical, Pencil, Trash2 } from "lucide-react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 import type { Cliente, Proposta } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
@@ -45,7 +45,7 @@ export default function ClienteDetalhes() {
   const [formData, setFormData] = useState<FormData>(initialFormData)
   const [saving, setSaving] = useState(false)
 
-  const supabase = createClientComponentClient()
+
 
   useEffect(() => {
     if (user && params.id) {

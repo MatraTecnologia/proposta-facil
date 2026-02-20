@@ -27,7 +27,6 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -87,7 +86,7 @@ export default function ServicoDetailsPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData)
   const [saving, setSaving] = useState(false)
 
-  const supabase = createClientComponentClient()
+
 
   const fetchServicoData = useCallback(async () => {
     if (!user?.id || !params.id) return

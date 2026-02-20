@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, RotateCcw, Save, Wand2, Contrast, Filter, Eye, PenTool, Undo, Redo } from "lucide-react"
 import { HexColorPicker } from "react-colorful"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 
 interface Assinatura {
@@ -177,7 +177,7 @@ DrawingControls.displayName = "DrawingControls"
 const AssinaturaPage = memo(function DesenharAssinaturaPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClientComponentClient()
+
   const { user } = useAuth() // Use the AuthContext instead
 
   const [isDrawing, setIsDrawing] = useState(false)

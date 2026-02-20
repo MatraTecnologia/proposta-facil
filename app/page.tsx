@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, KeyRound, CheckCircle, XCircle, Eye, EyeOff, Lock } from "lucide-react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
 
@@ -23,7 +23,7 @@ const AuthPage = memo(function AuthPage() {
   const [error, setError] = useState("")
 
   const router = useRouter()
-  const supabase = createClientComponentClient()
+
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
