@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, KeyRound, CheckCircle, XCircle, Eye, EyeOff, Lock, UserPlus } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
-import Link from "next/link"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
 
 const AuthPage = memo(function AuthPage() {
@@ -263,7 +262,7 @@ const AuthPage = memo(function AuthPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-center space-x-4 mt-4">
+                <div className="flex justify-center mt-4">
                   <button
                     type="button"
                     onClick={() => setStep("password")}
@@ -271,13 +270,6 @@ const AuthPage = memo(function AuthPage() {
                   >
                     Entrar com senha
                   </button>
-                  <span className="text-gray-600">•</span>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="text-sm text-gray-400 hover:text-orange-400 transition-colors"
-                  >
-                    Esqueceu a senha?
-                  </Link>
                 </div>
 
                 <div className="text-center mt-4 pt-4 border-t border-gray-700">
@@ -350,7 +342,7 @@ const AuthPage = memo(function AuthPage() {
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
 
-                <div className="flex justify-between text-sm">
+                <div className="text-center text-sm">
                   <button
                     type="button"
                     onClick={() => {
@@ -363,9 +355,6 @@ const AuthPage = memo(function AuthPage() {
                   >
                     ← Voltar
                   </button>
-                  <Link href="/auth/forgot-password" className="text-gray-400 hover:text-orange-400">
-                    Esqueceu a senha?
-                  </Link>
                 </div>
               </form>
             ) : step === "signup" ? (
