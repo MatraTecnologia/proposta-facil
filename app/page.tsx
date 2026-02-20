@@ -7,22 +7,27 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Mail, KeyRound, CheckCircle, XCircle, Eye, EyeOff, Lock } from "lucide-react"
+import { Mail, KeyRound, CheckCircle, XCircle, Eye, EyeOff, Lock, UserPlus } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { useAuth } from "@/contexts/AuthContext"
 import Link from "next/link"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
 
 const AuthPage = memo(function AuthPage() {
-  const [step, setStep] = useState<"email" | "otp" | "password">("email")
+  const [step, setStep] = useState<"email" | "otp" | "password" | "signup">("email")
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [name, setName] = useState("")
+  const [company, setCompany] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
 
   const router = useRouter()
+  const { signUp } = useAuth()
 
 
   const isValidEmail = (email: string) => {
@@ -139,6 +144,51 @@ const AuthPage = memo(function AuthPage() {
     }
   }
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+    setMessage("")
+
+    if (!name.trim()) {
+      setError("Nome é obrigatório")
+      setLoading(false)
+      return
+    }
+
+    if (!company.trim()) {
+      setError("Nome da empresa é obrigatório")
+      setLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError("A senha deve ter no mínimo 6 caracteres")
+      setLoading(false)
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError("As senhas não conferem")
+      setLoading(false)
+      return
+    }
+
+    try {
+      const { error } = await signUp(email, password, name.trim(), company.trim())
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setMessage("Conta criada! Verifique seu email para confirmar o cadastro.")
+      }
+    } catch {
+      setError("Erro de conexão. Tente novamente.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-orange-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -154,12 +204,14 @@ const AuthPage = memo(function AuthPage() {
                 <Mail className="w-6 h-6 text-white" />
               ) : step === "password" ? (
                 <Lock className="w-6 h-6 text-white" />
+              ) : step === "signup" ? (
+                <UserPlus className="w-6 h-6 text-white" />
               ) : (
                 <KeyRound className="w-6 h-6 text-white" />
               )}
             </div>
             <CardTitle className="text-white">
-              {step === "email" ? "Digite seu email" : step === "password" ? "Digite sua senha" : "Digite o código"}
+              {step === "email" ? "Digite seu email" : step === "password" ? "Digite sua senha" : step === "signup" ? "Criar sua conta" : "Digite o código"}
             </CardTitle>
             {step === "otp" && (
               <p className="text-gray-400 text-sm mt-2">
@@ -226,6 +278,21 @@ const AuthPage = memo(function AuthPage() {
                   >
                     Esqueceu a senha?
                   </Link>
+                </div>
+
+                <div className="text-center mt-4 pt-4 border-t border-gray-700">
+                  <span className="text-sm text-gray-400">Não tem conta? </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("signup")
+                      setError("")
+                      setMessage("")
+                    }}
+                    className="text-sm text-orange-400 hover:text-orange-300 font-medium transition-colors"
+                  >
+                    Criar conta
+                  </button>
                 </div>
               </form>
             ) : step === "password" ? (
@@ -299,6 +366,104 @@ const AuthPage = memo(function AuthPage() {
                   <Link href="/auth/forgot-password" className="text-gray-400 hover:text-orange-400">
                     Esqueceu a senha?
                   </Link>
+                </div>
+              </form>
+            ) : step === "signup" ? (
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-3">
+                  <Input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Seu nome"
+                    required
+                    className="w-full bg-gray-800 border-gray-600 text-white"
+                    autoFocus
+                  />
+
+                  <Input
+                    type="text"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    placeholder="Nome da empresa"
+                    required
+                    className="w-full bg-gray-800 border-gray-600 text-white"
+                  />
+
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    required
+                    className="w-full bg-gray-800 border-gray-600 text-white"
+                  />
+
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Senha (mín. 6 caracteres)"
+                      required
+                      className="w-full bg-gray-800 border-gray-600 text-white pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirmar senha"
+                    required
+                    className="w-full bg-gray-800 border-gray-600 text-white"
+                  />
+                </div>
+
+                {error && (
+                  <Alert className="border-red-500 bg-red-900/20">
+                    <XCircle className="w-4 h-4 text-red-400" />
+                    <AlertDescription className="text-red-400">{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {message && (
+                  <Alert className="border-green-500 bg-green-900/20">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <AlertDescription className="text-green-400">{message}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={loading || !email || !password || !name || !company || !confirmPassword}
+                  className="w-full bg-orange-600 hover:bg-orange-700 h-12 text-lg"
+                >
+                  {loading ? "Criando conta..." : "Criar conta"}
+                </Button>
+
+                <div className="text-center text-sm">
+                  <span className="text-gray-400">Já tem conta? </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("email")
+                      setPassword("")
+                      setConfirmPassword("")
+                      setError("")
+                      setMessage("")
+                    }}
+                    className="text-orange-400 hover:text-orange-300 font-medium transition-colors"
+                  >
+                    Entrar
+                  </button>
                 </div>
               </form>
             ) : (
