@@ -1,9 +1,9 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabase-admin"
-import crypto from "crypto"
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import crypto from 'crypto'
+import { type NextRequest, NextResponse } from 'next/server'
 
 // Token do webhook Kiwify
-const KIWIFY_WEBHOOK_SECRET = process.env.KIWIFY_WEBHOOK_SECRET || "amsrut44n9z"
+const KIWIFY_WEBHOOK_SECRET = process.env.KIWIFY_WEBHOOK_SECRET || 'amsrut44n9z'
 
 // Tipos de eventos do Kiwify
 interface KiwifyWebhookData {
@@ -22,73 +22,86 @@ interface KiwifyWebhookData {
   custom_fields?: Record<string, any>
 }
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     // Verificar se é uma requisição válida do Kiwify
-    const signature = request.headers.get("x-kiwify-signature")
+    const signature = request.headers.get('x-kiwify-signature')
 
     if (!signature) {
-      console.error("Webhook signature não encontrada")
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      console.error('Webhook signature não encontrada')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.text()
     const data: KiwifyWebhookData = JSON.parse(body)
 
-    console.log("Webhook Kiwify recebido:", data)
+    console.log('Webhook Kiwify recebido:', data)
 
     // Verificar assinatura do webhook
-    const isValidSignature = verifyKiwifySignature(body, signature, KIWIFY_WEBHOOK_SECRET)
+    const isValidSignature = verifyKiwifySignature(
+      body,
+      signature,
+      KIWIFY_WEBHOOK_SECRET,
+    )
     if (!isValidSignature) {
-      console.error("Assinatura do webhook inválida")
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
+      console.error('Assinatura do webhook inválida')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
     // Buscar usuário pelo email
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers()
+    const { data: userData, error: userError } =
+      await supabaseAdmin.auth.admin.listUsers()
 
     if (userError) {
-      console.error("Erro ao buscar usuários:", userError)
-      return NextResponse.json({ error: "User lookup failed" }, { status: 500 })
+      console.error('Erro ao buscar usuários:', userError)
+      return NextResponse.json({ error: 'User lookup failed' }, { status: 500 })
     }
 
-    const user = userData.users.find((u) => u.email === data.customer_email)
+    const user = userData.users.find(u => u.email === data.customer_email)
 
     if (!user) {
-      console.error("Usuário não encontrado:", data.customer_email)
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+      console.error('Usuário não encontrado:', data.customer_email)
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     // Determinar tipo de assinatura baseado no produto
-    let tipoAssinatura: "mensal" | "anual" | "vitalicia" = "mensal"
+    let tipoAssinatura: 'mensal' | 'anual' | 'vitalicia' = 'mensal'
     let dataFim: string | null = null
 
     // Mapear produtos do Kiwify para tipos de assinatura
     // Você deve substituir estes IDs pelos IDs reais dos seus produtos no Kiwify
-    const produtoConfig: Record<string, { tipo: "mensal" | "anual" | "vitalicia"; duracao?: number }> = {
+    const produtoConfig: Record<
+      string,
+      { tipo: 'mensal' | 'anual' | 'vitalicia'; duracao?: number }
+    > = {
       // Exemplo: substitua pelos IDs reais dos seus produtos
-      produto_mensal: { tipo: "mensal", duracao: 30 },
-      produto_anual: { tipo: "anual", duracao: 365 },
-      produto_vitalicio: { tipo: "vitalicia" },
+      produto_mensal: { tipo: 'mensal', duracao: 30 },
+      produto_anual: { tipo: 'anual', duracao: 365 },
+      produto_vitalicio: { tipo: 'vitalicia' },
     }
 
     // Tentar identificar o tipo de assinatura pelo nome do produto se não encontrar pelo ID
     if (!produtoConfig[data.product_id]) {
       const nomeProduto = data.product_name.toLowerCase()
-      if (nomeProduto.includes("mensal")) {
-        tipoAssinatura = "mensal"
+      if (nomeProduto.includes('mensal')) {
+        tipoAssinatura = 'mensal'
         const dataInicio = new Date()
         const dataFimCalculada = new Date(dataInicio)
         dataFimCalculada.setDate(dataFimCalculada.getDate() + 30)
         dataFim = dataFimCalculada.toISOString()
-      } else if (nomeProduto.includes("anual")) {
-        tipoAssinatura = "anual"
+      } else if (nomeProduto.includes('anual')) {
+        tipoAssinatura = 'anual'
         const dataInicio = new Date()
         const dataFimCalculada = new Date(dataInicio)
         dataFimCalculada.setDate(dataFimCalculada.getDate() + 365)
         dataFim = dataFimCalculada.toISOString()
-      } else if (nomeProduto.includes("vitalic") || nomeProduto.includes("lifetime")) {
-        tipoAssinatura = "vitalicia"
+      } else if (
+        nomeProduto.includes('vitalic') ||
+        nomeProduto.includes('lifetime')
+      ) {
+        tipoAssinatura = 'vitalicia'
         dataFim = null
       }
     } else {
@@ -104,40 +117,40 @@ export async function POST(request: NextRequest) {
     }
 
     // Determinar status baseado no status do pedido
-    let status: "ativa" | "cancelada" | "expirada" | "pendente" = "pendente"
+    let status: 'ativa' | 'cancelada' | 'expirada' | 'pendente' = 'pendente'
 
     switch (data.order_status.toLowerCase()) {
-      case "paid":
-      case "completed":
-      case "aprovado":
-      case "approved":
-        status = "ativa"
+      case 'paid':
+      case 'completed':
+      case 'aprovado':
+      case 'approved':
+        status = 'ativa'
         break
-      case "cancelled":
-      case "refunded":
-      case "cancelado":
-      case "reembolsado":
-        status = "cancelada"
+      case 'cancelled':
+      case 'refunded':
+      case 'cancelado':
+      case 'reembolsado':
+        status = 'cancelada'
         break
-      case "pending":
-      case "pendente":
-        status = "pendente"
+      case 'pending':
+      case 'pendente':
+        status = 'pendente'
         break
       default:
-        status = "pendente"
+        status = 'pendente'
     }
 
     // Verificar se já existe uma assinatura para este pedido
     const { data: existingAssinatura } = await supabaseAdmin
-      .from("user_assinaturas")
-      .select("*")
-      .eq("kiwify_order_id", data.order_id)
+      .from('user_assinaturas')
+      .select('*')
+      .eq('kiwify_order_id', data.order_id)
       .single()
 
     if (existingAssinatura) {
       // Atualizar assinatura existente
       const { error: updateError } = await supabaseAdmin
-        .from("user_assinaturas")
+        .from('user_assinaturas')
         .update({
           status,
           valor: data.order_total,
@@ -145,58 +158,73 @@ export async function POST(request: NextRequest) {
           webhook_data: data,
           updated_at: new Date().toISOString(),
         })
-        .eq("kiwify_order_id", data.order_id)
+        .eq('kiwify_order_id', data.order_id)
 
       if (updateError) {
-        console.error("Erro ao atualizar assinatura:", updateError)
-        return NextResponse.json({ error: "Update failed" }, { status: 500 })
+        console.error('Erro ao atualizar assinatura:', updateError)
+        return NextResponse.json({ error: 'Update failed' }, { status: 500 })
       }
 
-      console.log("Assinatura atualizada:", data.order_id)
+      console.log('Assinatura atualizada:', data.order_id)
     } else {
       // Criar nova assinatura
-      const { error: insertError } = await supabaseAdmin.from("user_assinaturas").insert({
-        user_id: user.id,
-        kiwify_order_id: data.order_id,
-        kiwify_customer_id: data.customer_id,
-        kiwify_product_id: data.product_id,
-        tipo_assinatura: tipoAssinatura,
-        status,
-        valor: data.order_total,
-        moeda: data.currency || "BRL",
-        data_inicio: new Date().toISOString(),
-        data_fim: dataFim,
-        auto_renovar: tipoAssinatura !== "vitalicia",
-        webhook_data: data,
-      })
+      const { error: insertError } = await supabaseAdmin
+        .from('user_assinaturas')
+        .insert({
+          user_id: user.id,
+          kiwify_order_id: data.order_id,
+          kiwify_customer_id: data.customer_id,
+          kiwify_product_id: data.product_id,
+          tipo_assinatura: tipoAssinatura,
+          status,
+          valor: data.order_total,
+          moeda: data.currency || 'BRL',
+          data_inicio: new Date().toISOString(),
+          data_fim: dataFim,
+          auto_renovar: tipoAssinatura !== 'vitalicia',
+          webhook_data: data,
+        })
 
       if (insertError) {
-        console.error("Erro ao criar assinatura:", insertError)
-        return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+        console.error('Erro ao criar assinatura:', insertError)
+        return NextResponse.json({ error: 'Insert failed' }, { status: 500 })
       }
 
-      console.log("Nova assinatura criada:", data.order_id)
+      console.log('Nova assinatura criada:', data.order_id)
     }
 
-    return NextResponse.json({ success: true, message: "Webhook processed successfully" })
+    return NextResponse.json({
+      success: true,
+      message: 'Webhook processed successfully',
+    })
   } catch (error) {
-    console.error("Erro no webhook Kiwify:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('Erro no webhook Kiwify:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    )
   }
 }
 
 // Função para verificar assinatura do webhook Kiwify
-function verifyKiwifySignature(payload: string, signature: string, secret: string): boolean {
+function verifyKiwifySignature(
+  payload: string,
+  signature: string,
+  secret: string,
+): boolean {
   try {
     // Implementação básica de verificação HMAC
-    const hmac = crypto.createHmac("sha256", secret)
-    const calculatedSignature = hmac.update(payload).digest("hex")
+    const hmac = crypto.createHmac('sha256', secret)
+    const calculatedSignature = hmac.update(payload).digest('hex')
 
     // Comparação segura de strings para evitar timing attacks
-    return crypto.timingSafeEqual(Buffer.from(calculatedSignature), Buffer.from(signature))
+    return crypto.timingSafeEqual(
+      Buffer.from(calculatedSignature),
+      Buffer.from(signature),
+    )
   } catch (error) {
-    console.error("Erro ao verificar assinatura:", error)
+    console.error('Erro ao verificar assinatura:', error)
     // Em caso de erro, permitir a requisição em ambiente de desenvolvimento
-    return process.env.NODE_ENV === "development"
+    return process.env.NODE_ENV === 'development'
   }
 }

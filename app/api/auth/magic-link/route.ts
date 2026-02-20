@@ -1,36 +1,42 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
-import { sendMagicLink } from "@/utils/email";
-import { verificarUsuarioEAssinatura } from "@/utils/verificarUsuarioEAssinatura";
+import { sendMagicLink } from '@/utils/email'
+import { verificarUsuarioEAssinatura } from '@/utils/verificarUsuarioEAssinatura'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
-  const requestUrl = new URL(request.url);
-  const formData = await request.formData();
-  const email = String(formData.get("email"));
-  const cookieStore = await cookies();
+  const requestUrl = new URL(request.url)
+  const formData = await request.formData()
+  const email = String(formData.get('email'))
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll(cookiesToSet) { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); },
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options),
+          )
+        },
       },
-    }
-  );
+    },
+  )
 
-  const userInfo = await verificarUsuarioEAssinatura(email);
+  const userInfo = await verificarUsuarioEAssinatura(email)
 
   // Sempre retornar mensagem genérica
   if (!userInfo.exists) {
     return NextResponse.json({
-      message: "Se o email estiver cadastrado, você receberá o link mágico",
+      message: 'Se o email estiver cadastrado, você receberá o link mágico',
       sent: true,
-    });
+    })
   }
 
   // Verificação de assinatura (opcional)
@@ -46,25 +52,25 @@ export async function POST(request: Request) {
     options: {
       emailRedirectTo: `${requestUrl.origin}/auth/callback`,
     },
-  });
+  })
 
   if (error) {
     return NextResponse.json(
-      { error: "Erro ao enviar o link mágico. Tente novamente mais tarde." },
-      { status: 500 }
-    );
+      { error: 'Erro ao enviar o link mágico. Tente novamente mais tarde.' },
+      { status: 500 },
+    )
   }
 
   try {
-    await sendMagicLink(email);
+    await sendMagicLink(email)
     return NextResponse.json({
-      message: "Se o email estiver cadastrado, você receberá o link mágico",
+      message: 'Se o email estiver cadastrado, você receberá o link mágico',
       sent: true,
-    });
+    })
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Erro ao enviar o email. Tente novamente mais tarde." },
-      { status: 500 }
-    );
+      { error: 'Erro ao enviar o email. Tente novamente mais tarde.' },
+      { status: 500 },
+    )
   }
 }
