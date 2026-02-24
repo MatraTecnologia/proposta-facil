@@ -65,8 +65,8 @@ async function verificarUsuarioEAssinatura(email: string) {
 
 export async function POST(request: Request) {
   const requestUrl = new URL(request.url)
-  const formData = await request.formData()
-  const email = String(formData.get('email'))
+  const { email: rawEmail } = await request.json()
+  const email = String(rawEmail || '')
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

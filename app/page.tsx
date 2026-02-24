@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
 
 const AuthPage = memo(function AuthPage() {
-  const [step, setStep] = useState<"email" | "otp" | "password" | "signup">("email")
+  const [step, setStep] = useState<"email" | "otp" | "password" | "signup" | "reset">("email")
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
   const [password, setPassword] = useState("")
@@ -188,6 +188,35 @@ const AuthPage = memo(function AuthPage() {
     }
   }
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+    setMessage("")
+
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setMessage(data.message || "Se o email estiver cadastrado, você receberá o link de redefinição.")
+      } else {
+        setError(data.error || "Erro ao solicitar redefinição de senha.")
+      }
+    } catch {
+      setError("Erro de conexão. Tente novamente.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-orange-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -205,16 +234,23 @@ const AuthPage = memo(function AuthPage() {
                 <Lock className="w-6 h-6 text-white" />
               ) : step === "signup" ? (
                 <UserPlus className="w-6 h-6 text-white" />
+              ) : step === "reset" ? (
+                <Mail className="w-6 h-6 text-white" />
               ) : (
                 <KeyRound className="w-6 h-6 text-white" />
               )}
             </div>
             <CardTitle className="text-white">
-              {step === "email" ? "Digite seu email" : step === "password" ? "Digite sua senha" : step === "signup" ? "Criar sua conta" : "Digite o código"}
+              {step === "email" ? "Digite seu email" : step === "password" ? "Digite sua senha" : step === "signup" ? "Criar sua conta" : step === "reset" ? "Redefinir senha" : "Digite o código"}
             </CardTitle>
             {step === "otp" && (
               <p className="text-gray-400 text-sm mt-2">
                 Código enviado para <strong>{email}</strong>
+              </p>
+            )}
+            {step === "reset" && (
+              <p className="text-gray-400 text-sm mt-2">
+                Enviaremos um link de redefinição para <strong>{email}</strong>
               </p>
             )}
           </CardHeader>
@@ -342,7 +378,7 @@ const AuthPage = memo(function AuthPage() {
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
 
-                <div className="text-center text-sm">
+                <div className="flex justify-between text-sm">
                   <button
                     type="button"
                     onClick={() => {
@@ -354,6 +390,18 @@ const AuthPage = memo(function AuthPage() {
                     className="text-gray-400 hover:text-orange-400"
                   >
                     ← Voltar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("reset")
+                      setPassword("")
+                      setError("")
+                      setMessage("")
+                    }}
+                    className="text-gray-400 hover:text-orange-400"
+                  >
+                    Esqueci a senha
                   </button>
                 </div>
               </form>
@@ -452,6 +500,55 @@ const AuthPage = memo(function AuthPage() {
                     className="text-orange-400 hover:text-orange-300 font-medium transition-colors"
                   >
                     Entrar
+                  </button>
+                </div>
+              </form>
+            ) : step === "reset" ? (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <Input
+                  type="email"
+                  value={email}
+                  disabled
+                  className="w-full bg-gray-800 border-gray-600 text-white"
+                />
+
+                <p className="text-gray-400 text-sm text-center">
+                  Você receberá um email com um link para criar uma nova senha.
+                </p>
+
+                {error && (
+                  <Alert className="border-red-500 bg-red-900/20">
+                    <XCircle className="w-4 h-4 text-red-400" />
+                    <AlertDescription className="text-red-400">{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {message && (
+                  <Alert className="border-green-500 bg-green-900/20">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <AlertDescription className="text-green-400">{message}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={loading || !email}
+                  className="w-full bg-orange-600 hover:bg-orange-700 h-12 text-lg"
+                >
+                  {loading ? "Enviando..." : "Enviar link de redefinição"}
+                </Button>
+
+                <div className="text-center text-sm">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("password")
+                      setError("")
+                      setMessage("")
+                    }}
+                    className="text-gray-400 hover:text-orange-400"
+                  >
+                    ← Voltar
                   </button>
                 </div>
               </form>
