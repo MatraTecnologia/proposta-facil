@@ -1,17 +1,22 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { createContext, useContext, useEffect, useState, useRef } from "react"
-import type { User } from "@supabase/supabase-js"
-import { supabase } from "@/lib/supabase"
-import { useRouter } from "next/navigation"
+import { supabase } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
+import { useRouter } from 'next/navigation'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 
 interface AuthContextType {
   user: User | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
-  signUp: (email: string, password: string, name: string, company: string) => Promise<{ error: any }>
+  signUp: (
+    email: string,
+    password: string,
+    name: string,
+    company: string,
+  ) => Promise<{ error: any }>
   signOut: () => Promise<void>
 }
 
@@ -38,17 +43,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       // Ignorar eventos de foco/blur da janela
-      if (event === "INITIAL_SESSION") return
+      if (event === 'INITIAL_SESSION') return
 
       setUser(session?.user ?? null)
       setLoading(false)
 
-      if (event === "SIGNED_IN") {
-        if (window.location.pathname === "/") {
-          router.push("/dashboard")
+      if (event === 'SIGNED_IN') {
+        if (window.location.pathname === '/') {
+          router.push('/dashboard')
         }
-      } else if (event === "SIGNED_OUT") {
-        router.push("/")
+      } else if (event === 'SIGNED_OUT') {
+        router.push('/')
       }
     })
 
@@ -65,7 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error }
   }
 
-  const signUp = async (email: string, password: string, name: string, company: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    name: string,
+    company: string,
+  ) => {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -74,12 +85,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name,
           company,
         },
+        emailRedirectTo: `${siteUrl}/dashboard`,
       },
     })
 
     // Se o usuário foi criado, criar configurações padrão
     if (data.user && !error) {
-      await supabase.from("configuracoes").insert({
+      await supabase.from('configuracoes').insert({
         user_id: data.user.id,
         empresa_nome: company,
         empresa_email: email,
@@ -111,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
 }

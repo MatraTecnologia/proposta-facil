@@ -118,10 +118,14 @@ export async function POST(request: NextRequest) {
     )
 
     // Enviar OTP
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      'https://propostafacil.matratecnologia.com'
     const { data, error } = await getSupabaseAuth().auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: false,
+        emailRedirectTo: `${siteUrl}/dashboard`,
       },
     })
 

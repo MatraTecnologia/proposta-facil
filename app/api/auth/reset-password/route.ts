@@ -117,8 +117,9 @@ export async function POST(request: Request) {
     '(verificação de assinatura desabilitada)',
   )
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${requestUrl.origin}/auth/update-password`,
+    redirectTo: `${siteUrl}/auth/update-password`,
   })
 
   if (error) {

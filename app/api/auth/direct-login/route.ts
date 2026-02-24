@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
       email: email,
       options: {
         redirectTo: `${
-          process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+          process.env.NEXT_PUBLIC_SITE_URL ||
+          'https://propostafacil.matratecnologia.com'
         }`,
       },
     })
