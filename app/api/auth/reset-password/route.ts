@@ -6,60 +6,30 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
-async function verificarUsuarioEAssinatura(email: string) {
+async function verificarUsuarioExiste(email: string) {
   try {
-    // Verificar se o usuário existe no Supabase Auth
-    const { data: user, error: userError } =
-      await supabaseAdmin.auth.admin.getUserByEmail(email)
-
-    if (userError) {
-      console.error('Erro ao buscar usuário no Supabase Auth:', userError)
-      return { exists: false, hasActiveSubscription: false }
-    }
-
-    const userId = user.user?.id
-
-    if (!userId) {
-      return { exists: false, hasActiveSubscription: false }
-    }
-
-    // Verificar se o usuário tem uma assinatura ativa no Supabase Storage
-    const { data: customerData, error: customerError } = await supabaseAdmin
-      .from('customers')
-      .select('stripe_customer_id')
-      .eq('user_id', userId)
-      .single()
-
-    if (customerError) {
-      console.error('Erro ao buscar customer no Supabase:', customerError)
-      return { exists: true, hasActiveSubscription: false }
-    }
-
-    if (!customerData || !customerData.stripe_customer_id) {
-      return { exists: true, hasActiveSubscription: false }
-    }
-
-    const { data: subscriptionData, error: subscriptionError } =
-      await supabaseAdmin
-        .from('subscriptions')
-        .select('status')
-        .eq('customer_id', customerData.stripe_customer_id)
-        .single()
-
-    if (subscriptionError) {
-      console.error(
-        'Erro ao buscar subscription no Supabase:',
-        subscriptionError,
+    // Buscar usuários e verificar se o email existe
+    // Usa paginação pois listUsers não suporta filtro por email nesta versão
+    let page = 1
+    const perPage = 50
+    while (true) {
+      const { data, error } =
+        await supabaseAdmin.auth.admin.listUsers({ page, perPage })
+      if (error) {
+        console.error('Erro ao buscar usuários no Supabase Auth:', error)
+        return false
+      }
+      const match = data.users.find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase(),
       )
-      return { exists: true, hasActiveSubscription: false }
+      if (match) return true
+      if (data.users.length < perPage) break
+      page++
     }
-
-    const hasActiveSubscription = subscriptionData?.status === 'active'
-
-    return { exists: true, hasActiveSubscription }
+    return false
   } catch (error) {
-    console.error('Erro ao verificar usuário e assinatura:', error)
-    return { exists: false, hasActiveSubscription: false }
+    console.error('Erro ao verificar usuário:', error)
+    return false
   }
 }
 
@@ -85,14 +55,14 @@ export async function POST(request: Request) {
     },
   )
 
-  // Verificar se usuário existe e tem assinatura
-  const userInfo = await verificarUsuarioEAssinatura(email)
+  // Verificar se usuário existe
+  const exists = await verificarUsuarioExiste(email)
 
-  console.log('👤 Usuário existe:', userInfo.exists)
-  // console.log("📋 Tem assinatura ativa:", userInfo.hasActiveSubscription)
+  console.log('👤 Usuário existe:', exists)
 
-  if (!userInfo.exists) {
+  if (!exists) {
     console.log('⚠️ Usuário não encontrado')
+    // Retorna mesma mensagem genérica para evitar enumeração de emails
     return NextResponse.json({
       message:
         'Se o email estiver cadastrado, você receberá o link de redefinição',
@@ -100,22 +70,7 @@ export async function POST(request: Request) {
     })
   }
 
-  // Comentar verificação de assinatura temporariamente
-  /*
-  if (!userInfo.hasActiveSubscription) {
-    console.log("⚠️ Usuário sem assinatura ativa")
-    return NextResponse.json(
-      { error: "Usuário sem assinatura ativa. Entre em contato com o suporte." },
-      { status: 403 },
-    )
-  }
-  */
-
-  console.log(
-    '📤 Enviando link de reset para:',
-    email,
-    '(verificação de assinatura desabilitada)',
-  )
+  console.log('📤 Enviando link de reset para:', email)
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
